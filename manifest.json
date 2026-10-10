@@ -1,54 +1,89 @@
 {
   "repo": "clarityvasupport/AI-OS",
   "branch": "main",
+  "architecture": "Skill + Project + Repo",
+  "version": "2.0",
+  "updated": "2026-10-10",
   "files": [
     {
-      "path": "PREAMBLE.md",
-      "description": "Entry point. Tells AI to ask, not assume."
+      "path": "README.md",
+      "tier": "meta",
+      "description": "Project overview. Explains the three-layer architecture."
     },
     {
-      "path": "CRM_SAAS_HANDOFF.md",
-      "description": "Project state (v0.6)."
+      "path": "PROTOCOL.md",
+      "tier": "meta",
+      "description": "The entry point. Describes how the AI OS works."
     },
     {
-      "path": "Coding/AGENT.md",
-      "description": "AI's role and boundaries."
+      "path": "manifest.json",
+      "tier": "meta",
+      "description": "Machine-readable map of every file."
     },
     {
-      "path": "Coding/AI_RULES.md",
-      "description": "Hard + soft rules."
+      "path": "Core/MASTER_PROFILE.md",
+      "tier": "core",
+      "description": "Who Master is, how to communicate."
     },
     {
-      "path": "Coding/MASTER_PROFILE.md",
-      "description": "Who Master is, how to talk."
+      "path": "Core/SKILLS.md",
+      "tier": "core",
+      "description": "Technical skills, stack, known gotchas."
     },
     {
-      "path": "Coding/SESSION_HEALTH.md",
-      "description": "Token tracking + footer + hallucination guard."
+      "path": "Core/SESSION_HEALTH.md",
+      "tier": "core",
+      "description": "Token calibration, footer detail, hallucination guard."
     },
     {
-      "path": "Coding/SKILLS.md",
-      "description": "Skills the AI brings."
+      "path": "Projects/CRM_SAAS_HANDOFF.md",
+      "tier": "project",
+      "description": "Full state of the CRM SaaS project."
+    },
+    {
+      "path": "Projects/CRM_SAAS_LEGAL_DRAFT.md",
+      "tier": "project",
+      "description": "Legal draft for attorney review.",
+      "status": "not committed — flag open"
     },
     {
       "path": "UpdateContext/CONTEXT_INDEX.md",
-      "description": "Map of the pack."
+      "tier": "context",
+      "description": "Map of the pack. What exists and when to retrieve it."
     },
     {
       "path": "UpdateContext/GLOSSARY.md",
-      "description": "Plain-language definitions."
+      "tier": "context",
+      "description": "Plain-language definitions of every term."
     },
     {
       "path": "UpdateContext/CORRECTIONS.md",
-      "description": "Running log of AI errors."
+      "tier": "context",
+      "description": "Running log of AI errors and fixes."
     },
     {
       "path": "UpdateContext/DECISION_LOG.md",
-      "description": "Chronological decisions."
+      "tier": "context",
+      "description": "Chronological decisions and reasons."
     },
     {
       "path": "UpdateContext/HOW_TO_START_A_CHAT.md",
-      "description": "Ritual for starting chats."
+      "tier": "context",
+      "description": "Master's ritual under the new architecture."
+    }
+  ],
+  "removed": [
+    {
+      "path": "PREAMBLE.md",
+      "reason": "Rules moved to the Master Protocol Skill."
+    },
+    {
+      "path": "Coding/AI_RULES.md",
+      "reason": "Behavioral rules moved to the Master Protocol Skill."
+    },
+    {
+      "path": "Coding/AGENT.md",
+      "reason": "Role definition moved to the Master Protocol Skill."
     }
   ]
 }

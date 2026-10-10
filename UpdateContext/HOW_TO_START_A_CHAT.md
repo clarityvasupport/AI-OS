@@ -1,46 +1,64 @@
 # HOW_TO_START_A_CHAT.md
-> Purpose: Master's ritual for starting chats.
-> Follow this so the AI always has what it needs — no more, no less.
+> Purpose: Master's ritual for starting chats under the new architecture.
+> The old paste ritual is gone. The Skill and Project handle context now.
+
+---
 
 ## The Ritual
 
 ### Step 1 — Open a new chat
-Fresh context. The AI has no memory of previous chats.
+The Skill fires automatically. The Project carries the files.
 
-### Step 2 — Paste `PREAMBLE.md` first
-Before anything else. It tells the AI not to assume and to ask for context.
+### Step 2 — Confirm the session type
+The AI will ask which applies:
 
-### Step 3 — Paste `CONTEXT_INDEX.md` (optional)
-Tells the AI what files exist. Useful when Master is unsure which files to send.
-
-### Step 4 — Answer the session-type question
-The AI will ask: A (new project), B (resume), C (general chat), D (debugging).
-
-### Step 5 — Paste the requested files
-The AI requests by filename. Master pastes them one by one or all at once.
-
-| Session type | Files to paste |
+| Type | Meaning |
 |---|---|
-| **A. New project** | MASTER_PROFILE, AI_RULES, AGENT, SKILLS, SESSION_HEALTH |
-| **B. Resuming a project** | MASTER_PROFILE, AI_RULES, AGENT, SKILLS, SESSION_HEALTH, GLOSSARY, + the project's HANDOFF |
-| **C. General chat** | MASTER_PROFILE, AI_RULES, SESSION_HEALTH |
-| **D. Debugging** | MASTER_PROFILE, AI_RULES, AGENT, SESSION_HEALTH, + the project's HANDOFF, + the file with the error |
+| **A** | New project |
+| **B** | Resume a project |
+| **C** | General chat |
+| **D** | Debugging |
 
-### Step 6 — Confirm the AI has everything
-The AI lists what it received. If something is missing, paste it.
+Answer in one line: "B" or "C — general".
 
-### Step 7 — Begin
-Only now start the actual work.
+### Step 3 — The AI retrieves what it needs
+No pasting. The AI pulls from the Project based on session type and lists what it retrieved. If something is missing, it says so.
+
+### Step 4 — Begin
+Only after the AI confirms it has what it needs.
+
+---
+
+## What changed from v1.0
+
+| Old ritual | New ritual |
+|---|---|
+| Paste `PREAMBLE.md` first | Not needed — the Skill asks the session type automatically |
+| Paste `CONTEXT_INDEX.md` | Not needed — the AI knows the index |
+| Paste requested files one by one | Not needed — the Project holds them |
+| Confirm the AI received the files | Still happens — the AI lists what it retrieved |
+
+**Net effect:** fewer steps, no pasting, same discipline.
+
+---
 
 ## Between-Chat Hygiene
-- **Before closing a chat:** ask the AI to run a session health check. If > 40%, write a handoff.
-- **After closing a chat:** save any new handoff versions locally.
-- **Commit updates:** push new `.md` files to the repo when changed.
+
+- **Before closing a chat** — if the AI flags the 35% threshold, draft a handoff. At 50%, the handoff is required.
+- **After closing a chat** — save the new handoff version to `Projects/` and commit.
+- **After a milestone** — re-import the repo so the Project context stays fresh.
+
+---
 
 ## What NOT to Do
-- Don't paste everything. The pack is designed to be sent in subsets.
-- Don't skip the PREAMBLE. Without it, the AI assumes.
-- Don't start the work before Step 6. Confirmation is a gate.
+
+- Don't paste files manually. The Project has them. If it doesn't, that's a bug — fix the Project, not the habit.
+- Don't skip the session gate. The type determines what gets retrieved.
+- Don't start work before the AI confirms it has what it needs.
+
+---
 
 ## Version History
-- v1.0 — Created 2026-10-09 after M0.
+
+- v1.0 — 2026-10-09 — Original paste ritual.
+- **v2.0 — 2026-10-10 — Rewritten. The paste ritual is replaced by the Skill + Project architecture.**

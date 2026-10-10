@@ -1,42 +1,86 @@
 # CONTEXT_INDEX.md
-> Purpose: Map of all context files. Paste with PREAMBLE.md at the start of any chat.
-> This file does not contain rules. It only says what exists and when to use it.
+> Purpose: Map of every file in the AI OS. Use it to know what exists and when to retrieve it.
+> This file does not contain rules. The rules live in the Skill.
 
-## Tier 1 — Foundation (always relevant)
+---
 
-| File | Purpose | When to paste |
+## The layers
+
+| Layer | Where | Fires when |
 |---|---|---|
-| `PREAMBLE.md` | Tells AI to ask for files on demand. | Always first. |
-| `MASTER_PROFILE.md` | Who Master is, how they think, how to talk to them. | Always. |
-| `AI_RULES.md` | Hard and soft rules for AI behavior. | Always. |
-| `AGENT.md` | AI's role, boundaries, and operating modes. | Always for project work. |
-| `SKILLS.md` | Skills and anti-skills the AI brings. | Always for project work. |
+| **Skill** | BDS Skill "Master Protocol" | Every session, automatically |
+| **Project** | BDS Project "AI OS" | Every chat in the project |
+| **Repo** | This repository | Retrieved on demand |
 
-## Tier 2 — Reference (paste as needed)
+## Tier 1 — Core (retrieve when needed)
 
-| File | Purpose | When to paste |
+| File | Purpose | Retrieve when |
 |---|---|---|
-| `GLOSSARY.md` | Plain-language definitions of every term we use. | When new to a topic, or when AI uses jargon. |
-| `HOW_TO_START_A_CHAT.md` | Master's step-by-step ritual for starting chats. | When Master forgets the ritual. |
-| `DECISION_LOG.md` | Chronological decisions and reasons. | When resuming a project. |
-| `CORRECTIONS.md` | Log of AI mistakes and corrections. | When AI repeats itself. |
+| `Core/MASTER_PROFILE.md` | Who Master is, how to communicate. | Resuming work, calibrating tone. |
+| `Core/SKILLS.md` | Technical skills, stack, known gotchas. | Technical or build work. |
+| `Core/SESSION_HEALTH.md` | Token calibration, footer detail, hallucination guard. | Auditing the footer, checking calibration. |
+
+## Tier 2 — Context (retrieve as needed)
+
+| File | Purpose | Retrieve when |
+|---|---|---|
+| `UpdateContext/GLOSSARY.md` | Plain-language definitions. | AI uses an unfamiliar term. |
+| `UpdateContext/DECISION_LOG.md` | Chronological decisions and reasons. | Resuming a project — understanding why things are the way they are. |
+| `UpdateContext/CORRECTIONS.md` | Log of AI errors and fixes. | AI seems to repeat a mistake. |
+| `UpdateContext/HOW_TO_START_A_CHAT.md` | Master's ritual. | Reference only — mostly superseded by the Skill. |
+| `UpdateContext/CONTEXT_INDEX.md` | This file. | When unsure what exists. |
 
 ## Tier 3 — Project (one per project)
 
-| File | Purpose | When to paste |
+| File | Purpose | Retrieve when |
 |---|---|---|
-| `CRM_SAAS_HANDOFF.md` | Full state of CRM SaaS project. | When working on CRM SaaS. |
-| `CRM_SAAS_LEGAL_DRAFT.md` | Legal draft for attorney review. | When discussing legal. |
+| `Projects/CRM_SAAS_HANDOFF.md` | Full state of the CRM SaaS project. | Working on CRM SaaS. |
+| `Projects/CRM_SAAS_LEGAL_DRAFT.md` | Legal draft for attorney review. | Discussing legal. *(Status: not yet committed — see flag below.)* |
 
 ## Loading order
-1. PREAMBLE.md
-2. Whatever files the AI requests based on session type.
+
+The Skill fires automatically. After confirming session type:
+
+1. **Type A (new)** — Core only.
+2. **Type B (resume)** — Core + the project handoff.
+3. **Type C (general)** — Core only.
+4. **Type D (debug)** — Core + handoff + the broken file.
+
+Never retrieve more than the session type requires.
+
+## Folder structure
+
+```
+AI-OS/
+├── README.md
+├── PROTOCOL.md
+├── manifest.json
+├── Core/
+│   ├── MASTER_PROFILE.md
+│   ├── SKILLS.md
+│   └── SESSION_HEALTH.md
+├── Projects/
+│   └── CRM_SAAS_HANDOFF.md
+└── UpdateContext/
+    ├── CONTEXT_INDEX.md
+    ├── GLOSSARY.md
+    ├── CORRECTIONS.md
+    ├── DECISION_LOG.md
+    └── HOW_TO_START_A_CHAT.md
+```
+
+## Open flag
+
+**`CRM_SAAS_LEGAL_DRAFT.md`** — referenced in the previous index v1.1 but **not present in the repo**. Either it was never committed, or it lives elsewhere. Confirm and either commit it or remove the reference. Tracked for resolution.
 
 ## Maintenance
-- Add new files to this index when created.
+
+- Add new files here when created.
 - Version bump when structure changes.
 - Keep it honest. If a file is not used, remove it.
 
 ## Version History
+
 - v1.0 — Initial context pack.
 - v1.1 — Added PREAMBLE.md. Added Tier 2 files. Clarified loading order.
+- **v2.0 — 2026-10-10 — Rewritten for the Skill-based architecture. Rules moved to Skill. Folders renamed (Coding → Core). Projects folder introduced. PREAMBLE.md, AI_RULES.md, AGENT.md removed.**
