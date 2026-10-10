@@ -1,0 +1,54 @@
+{
+  "repo": "clarityvasupport/AI-OS",
+  "branch": "main",
+  "files": [
+    {
+      "path": "PREAMBLE.md",
+      "description": "Entry point. Tells AI to ask, not assume."
+    },
+    {
+      "path": "CRM_SAAS_HANDOFF.md",
+      "description": "Project state (v0.6)."
+    },
+    {
+      "path": "Coding/AGENT.md",
+      "description": "AI's role and boundaries."
+    },
+    {
+      "path": "Coding/AI_RULES.md",
+      "description": "Hard + soft rules."
+    },
+    {
+      "path": "Coding/MASTER_PROFILE.md",
+      "description": "Who Master is, how to talk."
+    },
+    {
+      "path": "Coding/SESSION_HEALTH.md",
+      "description": "Token tracking + footer + hallucination guard."
+    },
+    {
+      "path": "Coding/SKILLS.md",
+      "description": "Skills the AI brings."
+    },
+    {
+      "path": "UpdateContext/CONTEXT_INDEX.md",
+      "description": "Map of the pack."
+    },
+    {
+      "path": "UpdateContext/GLOSSARY.md",
+      "description": "Plain-language definitions."
+    },
+    {
+      "path": "UpdateContext/CORRECTIONS.md",
+      "description": "Running log of AI errors."
+    },
+    {
+      "path": "UpdateContext/DECISION_LOG.md",
+      "description": "Chronological decisions."
+    },
+    {
+      "path": "UpdateContext/HOW_TO_START_A_CHAT.md",
+      "description": "Ritual for starting chats."
+    }
+  ]
+}
