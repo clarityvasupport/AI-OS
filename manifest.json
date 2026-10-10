@@ -2,7 +2,7 @@
   "repo": "clarityvasupport/AI-OS",
   "branch": "main",
   "architecture": "Skill + Project + Repo",
-  "version": "2.1",
+  "version": "2.2",
   "updated": "2026-10-10",
   "files": [
     {
@@ -21,6 +21,11 @@
       "description": "Machine-readable map of every file."
     },
     {
+      "path": "manifest.md",
+      "tier": "meta",
+      "description": "Human-readable mirror of manifest.json. Read by the extension."
+    },
+    {
       "path": "Core/MASTER_PROFILE.md",
       "tier": "core",
       "description": "Who Master is, how to communicate."
@@ -34,6 +39,11 @@
       "path": "Core/SESSION_HEALTH.md",
       "tier": "core",
       "description": "Token calibration, footer detail, hallucination guard."
+    },
+    {
+      "path": "Projects/AI_OS_REBUILD_HANDOFF.md",
+      "tier": "project",
+      "description": "Full state of the AI OS rebuild."
     },
     {
       "path": "Projects/CRM_SAAS_HANDOFF.md",
