@@ -1,100 +1,94 @@
 # AI_OS_REBUILD_HANDOFF.md
-> Version: v1.4
-> Status: **OAuth fully wired. Cloudflare secrets set. Ready for BDS connection and first test.**
-> Next step: **Step 4 — Add MCP URL to BDS Advanced Settings.**
-> Build status: Worker live and configured at `https://github-mcp-server.clarityva-support.workers.dev`
+> Version: v1.5
+> Status: **MCP connection live end-to-end. `get_file_contents` verified against `clarityvasupport/AI-OS`. Rebuild goal met.**
+> Next step: **Cleanup pass — see NEXT section.**
+> Build status: Worker live, patched, and returning GitHub data to BDS.
 
 ---
 
-## UPDATE — what changed this session (v1.3 → v1.4)
+## UPDATE — what changed this session (v1.4 → v1.5)
 
-### Steps 2 and 3 complete — OAuth and secrets
+### Steps 4 and 5 complete — MCP path verified end-to-end
 
-**Step 2 — Two GitHub OAuth Apps created (Production + Development).**
+**Step 4 — MCP URL and credentials added to BDS.**
 
-| App | Homepage URL | Callback URL | Purpose |
-|---|---|---|---|
-| **Production** | `https://github-mcp-server.clarityva-support.workers.dev` | `https://github-mcp-server.clarityva-support.workers.dev/callback` | Live Worker |
-| **Development** | `http://localhost:8788` | `http://localhost:8788/callback` | Local dev only |
+- Server URL: `https://github-mcp-server.clarityva-support.workers.dev/mcp`
+- API Key field: **a GitHub Personal Access Token** (classic, `repo` + `read:user` scopes)
 
-**Production Client ID (safe to record):** `Ov231iICcQWHQdDcp4G`
-**Production Client Secret:** stored by Master (not in this chat).
-**Development Client ID / Secret:** stored by Master (not in this chat). Unused for now.
+**Key discovery — BDS field semantics.** The BDS "API Key (optional)" field is sent as an `Authorization: Bearer <value>` header on every MCP request. It is **not** a static shared secret. This matters because the Worker's OAuth-provider layer rejects unknown bearer tokens by default.
 
-**Step 3 — Three Cloudflare secrets verified set** (they were already present from a prior session; Master re-pasted the two OAuth values to confirm names and values, left `COOKIE_ENCRYPTION_KEY` untouched):
+**Step 5 — Test with `get_file_contents`.**
 
-- ✅ `OAUTH_GITHUB_CLIENT_ID` — set
-- ✅ `OAUTH_GITHUB_CLIENT_SECRET` — set
-- ✅ `COOKIE_ENCRYPTION_KEY` — set (value unchanged from prior session; Master holds a backup copy of a fresh key)
+- Tool: `get_file_contents`
+- `owner`: `clarityvasupport`
+- `repo`: `AI-OS`
+- `path`: `manifest.json`
+- `branch`: `main`
+- **Result: ✅ returned the real file.** MCP path proven.
 
-**Bindings confirmed present on the Worker:**
+### Major pivot — the fork was NOT needed
 
-- ✅ Durable Object: `MCP_OBJECT` → `github-mcp-server_GitHubMCP`
-- ✅ KV Namespace: `OAUTH_KV` → `github-mcp-server`
+Original v1.4 plan was Option A: fork `leelakanakala/github-mcp` and add static PAT auth as a new stateless handler. Reading the source of `@cloudflare/workers-oauth-provider` (v1.2.3) revealed a callback that was already in the library since **v0.0.9**: **`resolveExternalToken`**.
 
-### Critical finding — the source README is unreliable
+What it does: when a bearer token is not found in the internal KV store, this callback fires. It lets the deployer validate a foreign credential (PAT, API key, JWT from another issuer) and return props — exactly the shape the 26 tools already read from `this.props`.
 
-Verified across this session: the README of `leelakanakala/github-mcp` disagrees with the source code on **three separate claims.**
+**Result:** the entire patch collapsed to **one new property** on the existing `OAuthProvider` constructor in the deployed fork.
 
-| Claim | README says | Code says | Winner |
-|---|---|---|---|
-| MCP sub-path | `/sse` | `/mcp` | Code |
-| Secret env var names | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | `OAUTH_GITHUB_CLIENT_ID` / `OAUTH_GITHUB_CLIENT_SECRET` | Code |
-| Tool names/count | 26, correct names | 26, correct names | Both agree here |
+### The patch — self-contained for the next session
 
-**Rule going forward: trust the code, not the README.** When in doubt, fetch `src/*.ts`.
+**File:** `clarityvasupport/github-mcp-server` → `src/index.ts`
 
-### Verified facts (from source, this session)
+**Location:** bottom of the file, inside the `new OAuthProvider({...})` call, after `tokenEndpoint: "/token",`
 
-**MCP endpoint URL (for BDS):**
-    https://github-mcp-server.clarityva-support.workers.dev/mcp
+**Content added:**
 
-**OAuth callback URL (set in Production app):**
-    https://github-mcp-server.clarityva-support.workers.dev/callback
+```ts
+resolveExternalToken: async ({ token }) => {
+	// BDS sends a GitHub PAT as the bearer. Match GitHub PAT prefixes only;
+	// anything else is a stale internal token or foreign credential.
+	if (!/^(ghp_|ghs_|gho_|ghu_|ghr_|github_pat_)/.test(token)) return null;
 
-**OAuth scopes requested** (from `github-handler.ts`):
-    repo read:user read:org
+	const response = await fetch("https://api.github.com/user", {
+		headers: {
+			Authorization: `Bearer ${token}`,
+			Accept: "application/vnd.github+json",
+			"User-Agent": "github-mcp-server",
+			"X-GitHub-Api-Version": "2022-11-28",
+		},
+	});
+	if (!response.ok) return null;
 
-**Environment variables the Worker reads** (from `types.ts`):
-    OAUTH_GITHUB_CLIENT_ID      — string
-    OAUTH_GITHUB_CLIENT_SECRET  — string
-    COOKIE_ENCRYPTION_KEY       — string
-    MCP_OBJECT                  — DurableObjectNamespace (binding)
-    OAUTH_KV                    — KVNamespace (binding)
+	const user = (await response.json()) as {
+		login: string;
+		name?: string;
+		email?: string;
+	};
 
-**Full OAuth route map:**
+	return {
+		props: {
+			accessToken: token,
+			login: user.login,
+			name: user.name ?? user.login,
+			email: user.email ?? "",
+		},
+	};
+},
+```
 
-| Route | Purpose |
-|---|---|
-| `/mcp` | MCP protocol endpoint (BDS connects here) |
-| `/authorize` | OAuth login entry point |
-| `/callback` | GitHub redirect handler |
-| `/token` | OAuth token exchange |
-| `/register` | OAuth client registration |
+**No other file changed.** No new dependencies. The 26 tools are untouched. The OAuth flow is untouched.
 
-**All 26 tools the deployed server exposes:**
+### Verified facts (this session)
 
-| Category | Tools |
-|---|---|
-| **Files** (3) | `create_or_update_file`, `push_files`, `get_file_contents` |
-| **Repos** (4) | `search_repositories`, `create_repository`, `fork_repository`, `create_branch` |
-| **Issues** (5) | `create_issue`, `list_issues`, `update_issue`, `add_issue_comment`, `get_issue` |
-| **PRs** (10) | `create_pull_request`, `list_pull_requests`, `get_pull_request`, `merge_pull_request`, `create_pull_request_review`, `get_pull_request_files`, `get_pull_request_status`, `update_pull_request_branch`, `get_pull_request_comments`, `get_pull_request_reviews` |
-| **Search** (3) | `search_code`, `search_issues`, `search_users` |
-| **Commits** (1) | `list_commits` |
-
-### Handoff drift corrected this session
-
-- ❌ **v1.2 banner said "Step 1 — Create two GitHub OAuth Apps."** Actual Step 1 was confirming the MCP sub-path. Banner was wrong; NEXT section was right.
-- ❌ **v1.2 TAG section said "OAuth apps not created, three secrets not set."** Secrets were already set from a prior session — Cloudflare showed all three rows filled with "Value encrypted" the moment Master opened the page. Flag was stale.
-- ❌ **v1.2 claimed 6 tools with names `list_repo_files`, `read_file`, `commit_files`, `list_open_pull_requests`.** None exist. Real list is 26 tools above.
-- ❌ **v1.2 said README said "6 tools."** README actually says 26. Handoff misquoted its own source.
-- ⚠️ **Mid-session self-correction logged:** I claimed "the README is the more authoritative source for its own repo." Wrong. The code is. Corrected in the same session.
+- **`resolveExternalToken` exists in `@cloudflare/workers-oauth-provider` from v0.0.9 onward.** Deployed fork pins `^0.2.3`.
+- **Return shape used:** `{ props: { ... } }` — no `audience` field. This worked as-is on the 0.2.x version. (My v1.4-era flag about `audience` being required was correct only for 1.x; the deployed 0.2.x did not require it.)
+- **BDS tool list:** all 26 GitHub tools discovered automatically after Save.
+- **BDS "API Key" = Bearer token.** This is the crucial mental model to retain.
+- **Worker URL still:** `https://github-mcp-server.clarityva-support.workers.dev`
 
 ### Session behavior notes
 
-- Master invoked **handoff override** — thresholds suspended. Work continued past 50% / 65% / 75%. Handoff written at ~100% as instructed.
-- Override is stored in Memory as `handoff_override`. If Master wants thresholds back for future sessions, this Memory entry needs removal.
+- **Massive context burn this session.** Three full repo imports (`leelakanakala/github-mcp`, `cloudflare/workers-oauth-provider`, `clarityvasupport/github-mcp-server`) plus the AI-OS import. Session ran **well past 300K** (approaching/exceeding 3× the cap by the end). Override was active throughout.
+- **Override worked, but at real cost.** For future sessions of this size, consider: read one file at a time; only import the specific repo needed for the current question.
 
 ---
 
@@ -102,84 +96,86 @@ Verified across this session: the README of `leelakanakala/github-mcp` disagrees
 
 **Complete:**
 
-- ✅ Live layer (Skill "Master Protocol" + system prompts + Memory)
+- ✅ Live layer (Skill "Master Protocol" + Memory + system prompts)
 - ✅ Repo layer (structure, files, manifest)
 - ✅ BDS Project "AI OS" created, instructions in, PROTOCOL.md attached
-- ✅ Fetch pattern verified for `.md`; `.json` gap documented
-- ✅ MCP Path A chosen
-- ✅ MCP Worker deployed — `https://github-mcp-server.clarityva-support.workers.dev`
-- ✅ `account_id` fixed in `wrangler.jsonc`
-- ✅ **MCP sub-path verified: `/mcp`**
-- ✅ **OAuth callback URL verified: `.../callback`**
-- ✅ **Secret names verified against `types.ts`**
-- ✅ **Tool list verified: 26 tools**
-- ✅ **OAuth scopes verified: `repo read:user read:org`**
-- ✅ **Production + Development OAuth Apps created**
-- ✅ **Cloudflare secrets set and verified**
-- ✅ **Bindings confirmed: `MCP_OBJECT`, `OAUTH_KV`**
+- ✅ MCP Worker deployed at `github-mcp-server.clarityva-support.workers.dev`
+- ✅ MCP sub-path verified: `/mcp`
+- ✅ OAuth callback URL verified: `.../callback`
+- ✅ Secret names verified against `types.ts`
+- ✅ Tool list verified: 26 tools
+- ✅ OAuth scopes verified: `repo read:user read:org`
+- ✅ Production + Development OAuth Apps created
+- ✅ Cloudflare secrets set: `OAUTH_GITHUB_CLIENT_ID`, `OAUTH_GITHUB_CLIENT_SECRET`, `COOKIE_ENCRYPTION_KEY`
+- ✅ Bindings confirmed: `MCP_OBJECT`, `OAUTH_KV`
+- ✅ **Worker patched with `resolveExternalToken`** — supports PAT auth for BDS
+- ✅ **MCP entry added to BDS with PAT in API Key field**
+- ✅ **BDS connection test: all 26 tools discovered**
+- ✅ **Step 5 live test: `get_file_contents` returned real `manifest.json` from AI-OS repo**
 
-**Open — not blocking:**
+**Open — not blocking, cleanup candidates:**
 
-- ⚠️ **MCP URL not yet added to BDS Advanced Settings** — URL known exactly: `https://github-mcp-server.clarityva-support.workers.dev/mcp`
-- ⚠️ **No connection test yet** — Step 5 pending
-- ⚠️ **`CRM_SAAS_LEGAL_DRAFT.md`** — referenced in `CONTEXT_INDEX.md` but absent from repo
-- ⚠️ **`Core/SESSION_HEALTH.md` footer format is stale** — file uses `[Input: | Output: | ...]`, live Skill uses `[Env: | Msg: | ...]`. This is the root cause of the footer-math bug already logged as CORRECTIONS #5.
-- ⚠️ **`manifest.json` drift** — v2.1 manifest does not list `Projects/AI_OS_REBUILD_HANDOFF.md`
-- ⚠️ **Dev OAuth app port 8788 is unverified** — README-only claim, not confirmed against code. Only relevant if local dev becomes necessary.
-- ⚠️ **Handoff override in Memory** — if Master wants thresholds back, remove `handoff_override` entry.
+- ⚠️ **`CRM_SAAS_LEGAL_DRAFT.md`** — referenced in `CONTEXT_INDEX.md` but absent from repo. Commit it or remove the reference.
+- ⚠️ **`Core/SESSION_HEALTH.md` footer format is stale** — file uses `[Input: | Output: | ...]`, live Skill uses `[Env: | Msg: | ...]`. Root cause of footer-math CORRECTIONS #5. **File needs editing to match live Skill.**
+- ⚠️ **`manifest.json` drift** — v2.1 manifest does not list `Projects/AI_OS_REBUILD_HANDOFF.md`. Needs updating.
+- ⚠️ **Handoff override in Memory** — if Master wants thresholds restored, remove `handoff_override` entry AND update `SESSION_HEALTH.md §9` back to standard thresholds.
+- ⚠️ **Dev OAuth app port 8788 unverified** — README-only claim, not confirmed against code. Only relevant if local dev becomes necessary.
+- ⚠️ **`README.md` still lists stale 3-folder structure** — new folders (`Projects/AI_OS_REBUILD_HANDOFF.md`, etc.) not reflected.
+- ⚠️ **`CLOUDFLARE_ACCESS.md`, `TOOLS.md` (fork repo only)** — not in AI-OS repo, no action needed.
 
 **Known bugs / issues:**
 
-- `.json` fetch fails silently (2 attempts, v1.2 session)
-- README of `leelakanakala/github-mcp` is stale across multiple claims — trust the code
+- `.json` fetch via the + button import — still fails silently (unrelated to MCP path; pre-existing).
+- **README of `leelakanakala/github-mcp` is unreliable across multiple claims** — trust the code.
 
 ---
 
 ## NEXT — immediate next action
 
-**Step 4 — Add MCP URL to BDS Advanced Settings.**
+**Cleanup pass.** Master explicitly requested this after Step 5 succeeded. Suggested order, one file at a time with Master's go between each:
 
-1. Open the BDS settings / Advanced Settings area where MCP servers are configured.
-2. Add a new MCP server entry.
-3. **Server URL:** `https://github-mcp-server.clarityva-support.workers.dev/mcp`
-4. Save.
-5. BDS will likely open a browser window on first connection attempt to complete GitHub OAuth (this is the expected flow — the Worker will redirect to `/authorize`, then to GitHub, then back to `/callback`).
-6. Authorize the OAuth app for the `clarityvasupport` GitHub account.
+### Cleanup 1 — Fix `Core/SESSION_HEALTH.md` footer spec
 
-**Step 5 — Test with `get_file_contents`.**
+- **File:** `Core/SESSION_HEALTH.md` (AI-OS repo)
+- **Change:** Section 4 footer format from `[Input: | Output: | ...]` → `[Env: | Msg: | ...]`
+- **Also:** Section 9 — remove or update the "AI initiates handoff suggestion at 35%" rule if the override is now permanent.
+- **Why:** Root cause of CORRECTIONS #5. The stale spec is still active in the repo, so any fresh session reading this file gets contradictory instructions.
 
-Once connected, run this tool call to prove the MCP path works end-to-end:
+### Cleanup 2 — Add handoff file to `manifest.json`
 
-- Tool: `get_file_contents`
-- `owner`: `clarityvasupport`
-- `repo`: `AI-OS`
-- `path`: `manifest.json`
-- `branch`: `main`
+- **File:** `manifest.json` (AI-OS repo)
+- **Change:** Add entry for `Projects/AI_OS_REBUILD_HANDOFF.md` under `files`, tier `project`.
+- **Why:** Manifest is the file map. A missing entry means a resume session that reads the manifest won't know the handoff exists.
 
-**Success looks like:** the contents of `manifest.json` returned as JSON text.
+### Cleanup 3 — Resolve `CRM_SAAS_LEGAL_DRAFT.md` reference
 
-**Failure modes to watch for:**
+- **File:** `UpdateContext/CONTEXT_INDEX.md` (AI-OS repo)
+- **Change:** Either (a) commit the draft, or (b) remove the reference from the index.
+- **Why:** Index refers to a file that isn't in the repo. Decays trust in the index.
 
-| Symptom | Likely cause |
-|---|---|
-| BDS can't reach the URL | Wrong path — must end in `/mcp`, not `/sse` |
-| Redirect to GitHub succeeds, then error | Callback URL mismatch — check Production app on GitHub |
-| "bad_verification_code" from GitHub | Dev credentials pasted into Cloudflare instead of Production |
-| Tool call returns "Not logged in" | OAuth flow not completed; retry in browser |
+### Cleanup 4 — Update `README.md` structure section
 
-**Then return to the outstanding cleanup list:**
+- **File:** `README.md` (AI-OS repo)
+- **Change:** The `## Structure` tree still shows the old 3-folder layout. Add `Projects/`, list both handoffs, reflect the current tree.
+- **Why:** Reader's first glance at the repo is wrong.
 
-- Fix `Core/SESSION_HEALTH.md` — replace `[Input: | Output: | ...]` with `[Env: | Msg: | ...]` to match live Skill
-- Add `Projects/AI_OS_REBUILD_HANDOFF.md` to `manifest.json`
-- Resolve `CRM_SAAS_LEGAL_DRAFT.md` flag — commit it or remove the reference
-- Decide whether to keep handoff override in Memory or restore thresholds
+### Cleanup 5 — Decide handoff override status
+
+- **File:** `Core/SESSION_HEALTH.md` §9 (AI-OS repo) + Memory entry `handoff_override`
+- **Decision needed:** Permanent working-style change, or a one-session exception?
+- **If permanent:** edit §9 to match, keep Memory entry.
+- **If temporary:** remove Memory entry, restore standard thresholds, edit §9 back.
+
+### Cleanup 6 — Optional: trim the repo
+
+- **Not urgent.** Now that the + import works, Master can retrieve only what a session needs. Consider whether some context files (e.g., `HOW_TO_START_A_CHAT.md`) still earn their place or are fully superseded by the Skill.
 
 ---
 
 ## Open Questions for Master
 
-1. **Repo trim** — worth reducing `+` import cost now that fetch works for `.md`? (Not urgent.)
-2. **Handoff override** — permanent change to working style, or one-session exception? If permanent, SESSION_HEALTH.md §9 should be edited to match.
+1. **Handoff override** — permanent or one-session? Determines whether Cleanup 5 edits or deletes.
+2. **Cleanup order** — do all 5 in one session, or one per session? The first four are small and could be batched.
 
 ---
 
@@ -188,5 +184,6 @@ Once connected, run this tool call to prove the MCP path works end-to-end:
 - v1.0 — 2026-10-10 — Initial handoff.
 - v1.1 — 2026-10-10 — Fetch tag path closed. `+` import confirmed. Resume Workflow skill created.
 - v1.2 — 2026-10-10 — Fetch pattern verified (`.md` ✅, `.json` ❌). Two self-corrections logged. MCP Path A deployed.
-- v1.3 — 2026-10-10 — Step 1 complete. Sub-path `/mcp`, callback `/callback`, secret names, and all 26 tool names verified against source. README of `leelakanakala/github-mcp` confirmed unreliable — code is truth.
-- **v1.4 — 2026-10-10 — Steps 2 and 3 complete. Two OAuth Apps created (Production + Development). Cloudflare secrets verified set. Bindings confirmed. Handoff drift in v1.2 flagged (stale "secrets not set", wrong tool list, wrong Step 1 banner). Handoff override in effect; session ran to 100%.**
+- v1.3 — 2026-10-10 — Step 1 complete. Sub-path `/mcp`, callback `/callback`, secret names, and all 26 tool names verified against source.
+- v1.4 — 2026-10-10 — Steps 2 and 3 complete. OAuth apps created, Cloudflare secrets verified, bindings confirmed. Handoff override in effect; session ran to 100%.
+- **v1.5 — 2026-10-10 — Steps 4 and 5 complete. MCP path live end-to-end. Major pivot: fork was unnecessary — `resolveExternalToken` callback in the OAuth-provider library solved PAT auth with a single-file patch. `get_file_contents` verified against `clarityvasupport/AI-OS`. Rebuild goal met. Cleanup pass queued.**
