@@ -1,46 +1,64 @@
 # AI_OS_REBUILD_HANDOFF.md
-> Version: v1.1
-> Status: Live layer complete. Repo layer complete. Repo import path resolved.
-> Next step: **Decide whether the BDS Project is still needed, now that the `+` button import is confirmed working.**
-> Build status: Extension configured. Repo rebuilt. Resume Workflow skill active. Project not yet created.
+> Version: v1.2
+> Status: MCP Worker **deployed and verified**. Awaiting OAuth + secrets + BDS connection.
+> Next step: **Step 1 — Create two GitHub OAuth Apps, then set three Worker secrets via Cloudflare Dashboard.**
+> Build status: Worker live at `https://github-mcp-server.clarityva-support.workers.dev`.
 
 ---
 
 ## UPDATE — what changed this session
 
-### The fetch-tag question is settled
-Prior handoff assumed the GitHub fetch tag (`BDS:AUTO:REQUEST_GITHUB_FETCH`) was the primary path and that the token might be the blocker. **Both assumptions were wrong.**
+### Fetch pattern — verified with caveats
 
-- The tag **fails in this environment** — three attempts, all returned empty, including one after a valid token was saved.
-- The token was **never the problem**. Configuration was correct: classic PAT, `repo` scope, saved in Advanced Settings.
-- DeepResearch confirmed the tag is a documented core feature — so the failure is environmental, not architectural.
+| Test | File | Result |
+|---|---|---|
+| `AUTO:REQUEST_WEB_FETCH` on raw GitHub `.md` | GLOSSARY.md, README.md, SESSION_HEALTH.md, CRM_SAAS_HANDOFF.md | ✅ All succeeded — full content, ~14K char file handled cleanly |
+| `AUTO:REQUEST_WEB_FETCH` on raw GitHub `.json` | manifest.json (×2 attempts) | ❌ Silent failure — no file, no card, no error |
 
-### The working path is confirmed
-Master imported the full repo successfully via the **`+` button → Import a GitHub repository**. This path:
-- Does **not** depend on the tag parser.
-- Works today, no setup required beyond the token already saved.
-- Brings in the entire repo (~25–30K tokens) in one action.
+**Caveats on fetched `.md`:**
+- Markdown escaping applied (`\#`, `\*\*`, `\_`) — prose readable, not paste-executable.
+- Code blocks collapse to one line — the Python snippet in SESSION_HEALTH.md arrived as a single line.
+- **Fetch is a reference tool, not a code-delivery tool.**
 
-### Resume Workflow skill created
-- Skill **"Resume Workflow"** — fingerprint `2047`. Active.
-- Fires on "resume" / "continue the project" / naming a handoff.
-- If the import is absent, it outputs the exact `+` button click path. If present, it runs the read sequence.
-- Encodes the rule: **never retry the fetch tag; use the `+` button.**
+### Two self-corrections logged this session
 
-### Memory corrected
-- `current_project` (always) — **updated** to *"AI OS Rebuild. Repository clarityvasupport AI-OS on GitHub, main branch."*
-- `repo_import_method` (called) — **new**. Records the `+` button path and that the fetch tag fails.
+1. **"Auto-injection works ✅"** — overstated. Master clarified Project files are selected via manual checkbox, not auto-injected. Corrected.
+2. **"Fork + Deploy button is web-UI-only"** for `clemdevlin/github-pr-mcp` — described before verification. On verification, its README shows CLI setup. Corrected.
 
-### Version awareness
-- Repo is on **v0.1.14**. Latest is **v0.1.15** (2026-10-09 — one day old).
-- v0.1.15 adds Multi-Forge import (GitHub, GitLab, HuggingFace, Codeberg) and bug fixes.
-- **Unverified** whether v0.1.15 fixes the fetch tag. Update is plausible, not confirmed.
+### MCP path — decision and outcome
 
-### New discrepancy logged
-- **Footer math disagrees with itself.** Master Protocol footer uses the *envelope* method (~113K this session). `SESSION_HEALTH.md` uses a *file-based* method (~42K). Gap is ~2.5×. Unreconciled. Flagged, not fixed.
+**Goal:** give the AI on-demand read/write/move access to the repo — like a local filesystem mirrored to GitHub — without CLI.
 
-### Search provider note
-- DuckDuckGo and Bing both returned anti-bot challenges or empty results during DeepResearch. **Direct fetches to known URLs work.** Prefer fetch over search when the URL is known.
+**Paths evaluated:**
+
+| Path | Repo | Deploy button | Auth | Verdict |
+|---|---|---|---|---|
+| A | `leelakanakala/github-mcp` | ✅ Yes | OAuth (2 apps + KV + 3 secrets) | **Chosen — deployed** |
+| B | `clemdevlin/github-pr-mcp` | ❌ No | PAT (simple) | ❌ CLI-blocked |
+| C | Custom build on Cloudflare template | ✅ Yes | TBD | Fallback — unused |
+
+**Path A — deployed and verified:**
+
+- ✅ Deploy button worked — cloned to `clarityvasupport/github-mcp-server`
+- ❌ First build failed: `account_id` placeholder in `wrangler.jsonc`
+- ✅ Fix applied: `account_id` set to `462fe9ef1a7169a830c9d9958e37ea06`
+- ✅ Second build succeeded — `✨ Success! Build completed.`
+- ✅ **Worker URL:** `https://github-mcp-server.clarityva-support.workers.dev`
+- ✅ **Version ID:** `e89410db-ecb4-490d-864e-830d69d5dd3f`
+- ✅ **Bindings attached:** `MCP_OBJECT` (Durable Object), `OAUTH_KV` (KV Namespace)
+
+**Tools the deployed server exposes** (per source README):
+`list_repo_files`, `read_file`, `create_branch`, `commit_files`, `create_pull_request`, `list_open_pull_requests`.
+
+### BDS environment findings (new)
+
+- **BDS v0.1.11+ supports MCP servers** — HTTP/Streamable HTTP only, no stdio. Configured in Advanced Settings. This removes the previously assumed blocker; BDS can act as an MCP client.
+
+### Footer-math discrepancy — cause identified
+
+- The **live Skill** uses `[Env: | Msg: | Session: | Files:]`
+- `Core/SESSION_HEALTH.md` **on disk still shows** `[Input: | Output: | Session: | Files:]`
+- **The file is stale — not mathematically wrong.** Fix is a file edit, not a math debate.
 
 ---
 
@@ -49,50 +67,61 @@ Master imported the full repo successfully via the **`+` button → Import a Git
 **Complete:**
 - ✅ Live layer (Skill "Master Protocol" + system prompts + Memory)
 - ✅ Repo layer (structure, files, manifest)
-- ✅ Corrections logged (5 entries)
-- ✅ Footer format corrected
-- ✅ Resume Workflow skill created and active
-- ✅ Repo import path resolved and confirmed
+- ✅ BDS Project "AI OS" created, instructions in, PROTOCOL.md attached
+- ✅ Fetch pattern verified for `.md`; `.json` gap documented
+- ✅ MCP Path A chosen
+- ✅ **MCP Worker deployed** — `https://github-mcp-server.clarityva-support.workers.dev`
+- ✅ `account_id` fixed in `wrangler.jsonc`
 
 **Open — not blocking:**
-- ⚠️ **`CRM_SAAS_LEGAL_DRAFT.md`** — referenced in `CONTEXT_INDEX.md` as "not yet committed," but absent from the repo. Decision needed: commit it, or remove the reference.
-- ⚠️ **Project token test not run** — whether Project files auto-inject is still unverified. May now be moot, since the import path works.
-- ⚠️ **v0.1.15 update decision** — pending. Not urgent.
-- ⚠️ **Footer math discrepancy** — envelope vs file-based methods disagree by ~2.5×. Needs a decision on which method is canonical.
-- ⚠️ **Repo token cost** — each import costs ~25–30K tokens. May warrant trimming the repo before every resume.
+- ⚠️ **OAuth apps not created** — two required (Production + Development)
+- ⚠️ **Three secrets not set** — `OAUTH_GITHUB_CLIENT_ID`, `OAUTH_GITHUB_CLIENT_SECRET`, `COOKIE_ENCRYPTION_KEY`
+- ⚠️ **MCP sub-path unverified** — Worker base URL is known, but the MCP protocol endpoint path (likely `/mcp` or `/sse`) is not confirmed. Next session's first step: fetch the README to confirm.
+- ⚠️ **MCP URL not yet added to BDS Advanced Settings**
+- ⚠️ **`CRM_SAAS_LEGAL_DRAFT.md`** — referenced in CONTEXT_INDEX.md but absent from repo
+- ⚠️ **Footer math discrepancy** — cause identified (stale SESSION_HEALTH.md). Fix pending.
+- ⚠️ **Repo trim** — each `+` import costs ~25–30K tokens
 
-**Known bugs encountered:**
-- BDS memory parser garbles values containing URL syntax. Workaround: write memory as plain prose.
-- `AUTO:REQUEST_GITHUB_FETCH` fails in this environment. `AUTO:REQUEST_WEB_FETCH` on raw GitHub URLs works. `+` button import is the primary path.
-- Re-creating a skill with the same name creates a duplicate, not an update. Delete the old one manually.
+**Known bugs encountered this session:**
+- `.json` fetch fails silently (2 attempts)
+- Earlier Path B framing was wrong before verification
+- Earlier "auto-injection works" claim was overstated
 
 ---
 
 ## NEXT — immediate next action
 
-**Step 1 — Decide the Project question.**
-The old plan was "create a lean BDS Project, then run the token test." That plan assumed the fetch tag was primary. Now that the `+` import works, the Project may be **redundant** — it could duplicate context and burn tokens.
+**Step 1 — Confirm the MCP sub-path.**
+Fetch the `leelakanakala/github-mcp` README and locate the exact path the MCP protocol is exposed on (likely `/mcp` or `/sse`). Confirm before proceeding — the OAuth callback URLs depend on it.
 
-Decision required:
-- **If the Project is still wanted** — create it lean (Instructions + `PROTOCOL.md` only), then run the token test.
-- **If the Project is dropped** — rely on the `+` import alone. Simpler, cheaper, already proven.
+**Step 2 — Create two GitHub OAuth Apps.**
+github.com/settings/developers → New OAuth App. Create Production + Development. Callback URLs from the repo README.
 
-**Step 2 — Resolve the legal draft flag.**
-Commit `CRM_SAAS_LEGAL_DRAFT.md`, or remove its reference from `CONTEXT_INDEX.md`.
+**Step 3 — Set three secrets via Cloudflare Dashboard.**
+Worker `github-mcp-server` → Settings → Variables & Secrets → Add:
+- `OAUTH_GITHUB_CLIENT_ID`
+- `OAUTH_GITHUB_CLIENT_SECRET`
+- `COOKIE_ENCRYPTION_KEY` — any 32+ character random string
 
-**Step 3 — Reconcile the footer math.**
-Decide which method is canonical — envelope or file-based — and align both `SESSION_HEALTH.md` and the Master Protocol footer to match.
+**Step 4 — Add MCP URL to BDS Advanced Settings.**
+Full URL: `https://github-mcp-server.clarityva-support.workers.dev` + the confirmed sub-path from Step 1.
+
+**Step 5 — Test with `list_repo_files` on `clarityvasupport/AI-OS`.**
+
+**Then return to the original NEXT list:**
+- Resolve the `CRM_SAAS_LEGAL_DRAFT.md` flag
+- Fix `SESSION_HEALTH.md` — replace old footer format with live Env/Msg format
 
 ---
 
 ## Open Questions for Master
-1. **Project** — create it, or drop it in favor of the `+` import?
-2. **Legal draft** — commit it, or remove the reference?
-3. **Footer math** — envelope method, file-based method, or a reconciled third?
-4. **Repo trim** — worth reducing token cost per import, or accept it?
+
+1. **OAuth complexity** — with Path A deployed, is the OAuth setup still acceptable, or do we pivot later to a lighter PAT-based server? (Not urgent — deploy succeeded.)
+2. **Repo trim** — worth reducing `+` import cost (~25–30K per import) now that fetch works for `.md`?
 
 ---
 
 ## Version History
-- v1.0 — 2026-10-10 — Initial handoff. Documented the extension-driven rebuild of the AI OS.
-- **v1.1 — 2026-10-10 — Fetch-tag path closed (confirmed failure). `+` button import confirmed as the working path. Resume Workflow skill created. Memory corrected. Footer math discrepancy logged. Project question reopened.**
+- v1.0 — 2026-10-10 — Initial handoff.
+- v1.1 — 2026-10-10 — Fetch tag path closed. `+` import confirmed. Resume Workflow skill created.
+- **v1.2 — 2026-10-10 — Fetch pattern verified (`.md` ✅, `.json` ❌). Two self-corrections logged. MCP Path A deployed and verified at `https://github-mcp-server.clarityva-support.workers.dev`. Footer-math cause identified: stale SESSION_HEALTH.md, not a math error. Session ended at ~72% (past 70% override).**
