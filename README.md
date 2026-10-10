@@ -37,11 +37,13 @@ AI-OS/
 ├── README.md
 ├── PROTOCOL.md
 ├── manifest.json
+├── manifest.md
 ├── Core/
 │   ├── MASTER_PROFILE.md
 │   ├── SKILLS.md
 │   └── SESSION_HEALTH.md
 ├── Projects/
+│   ├── AI_OS_REBUILD_HANDOFF.md
 │   └── CRM_SAAS_HANDOFF.md
 └── UpdateContext/
     ├── CONTEXT_INDEX.md
@@ -53,7 +55,7 @@ AI-OS/
 
 ## The handoff convention
 
-When context reaches 50% of the 300K cap, or Master calls it, the AI writes a handoff in three sections:
+When context reaches **100% of the 500K cap**, or Master calls it, the AI writes a handoff in three sections:
 
 - **UPDATE** — what changed this session
 - **TAG** — where we are now
@@ -61,6 +63,9 @@ When context reaches 50% of the 300K cap, or Master calls it, the AI writes a ha
 
 Handoffs live in `Projects/`. One per project. Versioned.
 
+Intermediate thresholds (35%, 50%, 65%) are suspended — Master's standing override.
+
 ## Version History
 
 - v1.0 — 2026-10-10 — Rewritten for the Skill-based architecture.
+- v1.1 — 2026-10-10 — Fixed Structure tree (added manifest.md, AI_OS handoff). Handoff convention updated to 500K cap with override.
