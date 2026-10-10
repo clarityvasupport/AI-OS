@@ -2,7 +2,7 @@
   "repo": "clarityvasupport/AI-OS",
   "branch": "main",
   "architecture": "Skill + Project + Repo",
-  "version": "2.0",
+  "version": "2.1",
   "updated": "2026-10-10",
   "files": [
     {
@@ -39,12 +39,6 @@
       "path": "Projects/CRM_SAAS_HANDOFF.md",
       "tier": "project",
       "description": "Full state of the CRM SaaS project."
-    },
-    {
-      "path": "Projects/CRM_SAAS_LEGAL_DRAFT.md",
-      "tier": "project",
-      "description": "Legal draft for attorney review.",
-      "status": "not committed — flag open"
     },
     {
       "path": "UpdateContext/CONTEXT_INDEX.md",
