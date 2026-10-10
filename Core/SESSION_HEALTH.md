@@ -10,13 +10,15 @@
 
 The model can hold 1M. Master has chosen a conservative 300K budget for sharper reasoning and lower drift.
 
+**Handoff thresholds are OVERRIDDEN.** Per Master's standing instruction:
+
 | Usage | Action |
 |---|---|
-| < 20% | Continue freely. |
-| 20–35% | Normal. Mention at milestones. |
-| 35–50% | Flag at next milestone. Prepare handoff draft. |
-| **50%+** | **Handoff required.** Stop new work. Write handoff. |
-| 65%+ | Emergency handoff. Close immediately. |
+| < 50% | Continue freely. |
+| 50–99% | Continue working. **Do NOT stop for handoff.** |
+| **100%** | Handoff required — write it at the cap, not before. |
+
+The 35%/50%/65% escalation ladder is suspended. Do not initiate handoff at any intermediate threshold. Only an explicit Master instruction or a 100% reading triggers a handoff.
 
 ---
 
@@ -61,24 +63,24 @@ Method:
 
 **Format:**
 ```
-— [Input: ~[X] | Output: ~[Y] | Session: ~[Z]K / 300K ([W]%) | Files: [list]]
+— [Env: ~[X] | Msg: ~[Y] | Session: ~[Z]K / 300K ([W]%) | Files: [list]]
 ```
 
 **Example:**
 ```
-— [Input: ~120 | Output: ~2K | Session: ~50.5K / 300K (17%) | Files: AGENT, AI_RULES, SESSION_HEALTH]
+— [Env: ~9K | Msg: ~15 | Session: ~30K / 300K (10%) | Files: SESSION_HEALTH, AI_OS_REBUILD_HANDOFF]
 ```
 
 **Field meanings:**
 
 | Field | Meaning |
 |---|---|
-| **Input** | Estimated tokens from Master's message this turn |
-| **Output** | Estimated tokens of this AI response |
-| **Session** | Running total in K, with % of 300K |
-| **Files** | Rule files consulted as active contracts this turn |
+| **Env** | Full envelope read this turn — system prompt + Skill + Memory + all prior history + Master's new message |
+| **Msg** | Master's new message only (typically ~10–50) |
+| **Session** | Running total of envelope + output since chat start, with % of 300K |
+| **Files** | Project files retrieved this turn. Write `—` if none. |
 
-**Honest limitation:** Input and Output are estimates, not measurements. ±30% error each turn. The Session total accumulates these estimates; the real number could be ±20% off. Never presented as precise.
+**Honest limitation:** Env and Msg are estimates, not measurements. ±20–40% error each turn. The Session total accumulates these estimates; the real number could be ±20% off. Never presented as precise.
 
 **If a rule file is missing from the list**, the AI did not consult it. That is a signal to Master.
 
@@ -105,11 +107,13 @@ print(len(tokenizer.encode(text)))
 ## Section 6 — Handoff Triggers
 
 Trigger a handoff when:
-- Estimated usage **≥ 50%**, OR
+- Master explicitly says so, OR
+- Estimated usage reaches **100%** of the 300K budget, OR
 - Master says "tokens are tight," OR
-- AI detects drift (forgetting, contradiction, repetition), OR
-- A major milestone closes naturally, OR
-- A major pivot or context shift occurs.
+- A major milestone closes AND Master requests a handoff, OR
+- A major pivot or context shift occurs AND Master requests a handoff.
+
+**Intermediate thresholds (35%, 50%, 65%) are suspended by Master's standing override.**
 
 ---
 
@@ -134,8 +138,8 @@ Trigger a handoff when:
 ```
 === SESSION HEALTH CHECK ===
 Milestone: [M# — name]
-Estimated usage: ~[X]K / 300K ([Y]%)
-Range: [low]% – [high]%
+Estimated usage: ~[X]K / 300K ([W]%)
+Range: [low]% — [high]%
 Drift signals: [none / describe]
 Recommendation: [continue / flag / handoff]
 ```
@@ -148,6 +152,7 @@ Recommendation: [continue / flag / handoff]
 - AI reports estimates as ranges, never false-exact numbers.
 - AI appends the footer to every response.
 - AI recalibrates after each Master-side Sol check.
-- AI initiates handoff suggestion at 35%; required at 50%.
+- **AI does not initiate a handoff at 35%, 50%, or 65% — override in effect.**
+- AI writes the handoff only at 100% of the 300K cap, or when Master says to.
 - AI flags drift the moment it notices it.
 - AI flags every self-correction explicitly; no silent fixes.
