@@ -1,94 +1,98 @@
 # AI_OS_REBUILD_HANDOFF.md
-> Version: v1.0
-> Status: Live layer complete. Repo layer complete. Ready for Project creation.
-> Next step: **Create the BDS Project, then run the Project token test.**
-> Build status: Extension configured. Repo rebuilt. Project not yet created.
+> Version: v1.1
+> Status: Live layer complete. Repo layer complete. Repo import path resolved.
+> Next step: **Decide whether the BDS Project is still needed, now that the `+` button import is confirmed working.**
+> Build status: Extension configured. Repo rebuilt. Resume Workflow skill active. Project not yet created.
 
 ---
 
 ## UPDATE — what changed this session
 
-### Discovery
-- Studied the Better DeepSeek (BDS) extension's capabilities and limitations.
-- Key finding: the extension provides a **Skill** (fires every session), a **Project** (holds context), **Memory** (persistent pointers), and a **System Prompt** layer — a native replacement for the paste-based context ritual.
+### The fetch-tag question is settled
+Prior handoff assumed the GitHub fetch tag (`BDS:AUTO:REQUEST_GITHUB_FETCH`) was the primary path and that the token might be the blocker. **Both assumptions were wrong.**
 
-### The architectural pivot
-The old AI OS was built for an AI that forgets. The extension removes that limitation. The system was rebuilt around three layers:
+- The tag **fails in this environment** — three attempts, all returned empty, including one after a valid token was saved.
+- The token was **never the problem**. Configuration was correct: classic PAT, `repo` scope, saved in Advanced Settings.
+- DeepResearch confirmed the tag is a documented core feature — so the failure is environmental, not architectural.
 
-| Layer | Holds | Fires |
-|---|---|---|
-| **Skill** | Behavioral rules | Every session, automatically |
-| **Project** | Context files | Per chat, retrieved on demand |
-| **Repo** | Source of truth | Retrieved on demand |
+### The working path is confirmed
+Master imported the full repo successfully via the **`+` button → Import a GitHub repository**. This path:
+- Does **not** depend on the tag parser.
+- Works today, no setup required beyond the token already saved.
+- Brings in the entire repo (~25–30K tokens) in one action.
 
-### Live layer — configured
-- **System prompt entry "AI OS Protocol"** — created, set to fire.
-- **Default prompt** — kept active (Multi-System mode on, both firing).
-- **Skill "Master Protocol"** — final version, fingerprint `5180`. Contains: context retention rule, the gate, one-step-at-a-time, address, session gate, communication, formatting, proactive behavior, never rules, persona, escalation, three-strike rule, footer (Env/Msg format), handoff thresholds, BDS environment note.
-- **Memory entries** — three saved:
-  - `user_identity` (always) — solo developer building an AI OS, address as "Master"
-  - `current_project` (called) — AI OS protocol repository on GitHub
-  - `workflow` (called) — re-imports the repo at each milestone
+### Resume Workflow skill created
+- Skill **"Resume Workflow"** — fingerprint `2047`. Active.
+- Fires on "resume" / "continue the project" / naming a handoff.
+- If the import is absent, it outputs the exact `+` button click path. If present, it runs the read sequence.
+- Encodes the rule: **never retry the fetch tag; use the `+` button.**
 
-### Repo layer — rebuilt
-- **Renamed** `Coding/` → `Core/`.
-- **Created** `Projects/` folder; moved `CRM_SAAS_HANDOFF.md` into it.
-- **Created** `PROTOCOL.md` — the new entry point.
-- **Rewrote** `CONTEXT_INDEX.md` (v2.0), `HOW_TO_START_A_CHAT.md` (v2.0), `README.md` (v1.0), `manifest.json` (v2.1).
-- **Deleted** `PREAMBLE.md`, `Coding/AI_RULES.md`, `Coding/AGENT.md` — content now lives in the Skill.
+### Memory corrected
+- `current_project` (always) — **updated** to *"AI OS Rebuild. Repository clarityvasupport AI-OS on GitHub, main branch."*
+- `repo_import_method` (called) — **new**. Records the `+` button path and that the fetch tag fails.
 
-### Corrections applied
-- **CORRECTIONS.md** — added correction #5: the footer Input field was misreported as the full envelope instead of Master's message (off by ~100×). Bumped to v1.1.
-- **Footer format fixed** — replaced `Input/Output` with `Env/Msg`. `Env` = the whole envelope (what fills the 300K cap). `Msg` = Master's message only.
-- **Skill updated** to reflect the new footer and add the rule: if a different quantity is substituted into a defined field, say so in the same turn.
+### Version awareness
+- Repo is on **v0.1.14**. Latest is **v0.1.15** (2026-10-09 — one day old).
+- v0.1.15 adds Multi-Forge import (GitHub, GitLab, HuggingFace, Codeberg) and bug fixes.
+- **Unverified** whether v0.1.15 fixes the fetch tag. Update is plausible, not confirmed.
+
+### New discrepancy logged
+- **Footer math disagrees with itself.** Master Protocol footer uses the *envelope* method (~113K this session). `SESSION_HEALTH.md` uses a *file-based* method (~42K). Gap is ~2.5×. Unreconciled. Flagged, not fixed.
+
+### Search provider note
+- DuckDuckGo and Bing both returned anti-bot challenges or empty results during DeepResearch. **Direct fetches to known URLs work.** Prefer fetch over search when the URL is known.
 
 ---
 
 ## TAG — where we are
 
 **Complete:**
-- ✅ Live layer (Skill + prompts + Memory)
+- ✅ Live layer (Skill "Master Protocol" + system prompts + Memory)
 - ✅ Repo layer (structure, files, manifest)
-- ✅ Corrections logged
+- ✅ Corrections logged (5 entries)
 - ✅ Footer format corrected
+- ✅ Resume Workflow skill created and active
+- ✅ Repo import path resolved and confirmed
 
 **Open — not blocking:**
-- ⚠️ **`CRM_SAAS_LEGAL_DRAFT.md`** — referenced in `CONTEXT_INDEX.md` v2.0 as "not yet committed," but not present in the repo. Decision needed: commit the file, or remove the reference.
-- ⚠️ **Project files behavior unknown** — unverified whether Project files auto-inject into every prompt (would burn ~20–30K/turn) or retrieve on demand (free). README suggests retrieval, but this is unconfirmed.
-- ⚠️ **Extension version** — repo is on `v0.1.14`. Latest is `v0.1.15`. Not urgent. The BDS memory parser bug (swallowing closing tags on URL syntax) may or may not be fixed in v0.1.15.
+- ⚠️ **`CRM_SAAS_LEGAL_DRAFT.md`** — referenced in `CONTEXT_INDEX.md` as "not yet committed," but absent from the repo. Decision needed: commit it, or remove the reference.
+- ⚠️ **Project token test not run** — whether Project files auto-inject is still unverified. May now be moot, since the import path works.
+- ⚠️ **v0.1.15 update decision** — pending. Not urgent.
+- ⚠️ **Footer math discrepancy** — envelope vs file-based methods disagree by ~2.5×. Needs a decision on which method is canonical.
+- ⚠️ **Repo token cost** — each import costs ~25–30K tokens. May warrant trimming the repo before every resume.
 
-**Known bugs encountered this session:**
+**Known bugs encountered:**
 - BDS memory parser garbles values containing URL syntax. Workaround: write memory as plain prose.
-- `AUTO:REQUEST_GITHUB_FETCH` failed multiple times. `AUTO:REQUEST_WEB_FETCH` on a raw GitHub URL worked. Route around it when needed.
+- `AUTO:REQUEST_GITHUB_FETCH` fails in this environment. `AUTO:REQUEST_WEB_FETCH` on raw GitHub URLs works. `+` button import is the primary path.
 - Re-creating a skill with the same name creates a duplicate, not an update. Delete the old one manually.
 
 ---
 
 ## NEXT — immediate next action
 
-**Step 1 — Create the BDS Project "AI OS"** (lean):
-- Instructions: the gate, non-negotiables, session gate
-- Files: `PROTOCOL.md` only
-- Everything else stays fetchable, not attached — until the token test proves otherwise
+**Step 1 — Decide the Project question.**
+The old plan was "create a lean BDS Project, then run the token test." That plan assumed the fetch tag was primary. Now that the `+` import works, the Project may be **redundant** — it could duplicate context and burn tokens.
 
-**Step 2 — Run the Project token test:**
-1. Start a chat with **no** Project attached. Note the Session number after one turn.
-2. Start a chat **with** the Project attached. Note the Session number after one turn.
-3. Compare. The delta tells us whether Project files auto-inject.
+Decision required:
+- **If the Project is still wanted** — create it lean (Instructions + `PROTOCOL.md` only), then run the token test.
+- **If the Project is dropped** — rely on the `+` import alone. Simpler, cheaper, already proven.
 
-**Step 3 — Decide on the MCP layer:**
-- Only after the Project test.
-- Purpose: enable GitHub commits without manual download/paste.
-- Not yet designed. Not yet approved.
+**Step 2 — Resolve the legal draft flag.**
+Commit `CRM_SAAS_LEGAL_DRAFT.md`, or remove its reference from `CONTEXT_INDEX.md`.
+
+**Step 3 — Reconcile the footer math.**
+Decide which method is canonical — envelope or file-based — and align both `SESSION_HEALTH.md` and the Master Protocol footer to match.
 
 ---
 
 ## Open Questions for Master
-1. `CRM_SAAS_LEGAL_DRAFT.md` — commit it, or remove the reference?
-2. Project instructions — start with the template from this session, or revise first?
-3. MCP — after the Project test, or skip entirely?
+1. **Project** — create it, or drop it in favor of the `+` import?
+2. **Legal draft** — commit it, or remove the reference?
+3. **Footer math** — envelope method, file-based method, or a reconciled third?
+4. **Repo trim** — worth reducing token cost per import, or accept it?
 
 ---
 
 ## Version History
-- v1.0 — 2026-10-10 — Initial handoff. Documents the extension-driven rebuild of the AI OS.
+- v1.0 — 2026-10-10 — Initial handoff. Documented the extension-driven rebuild of the AI OS.
+- **v1.1 — 2026-10-10 — Fetch-tag path closed (confirmed failure). `+` button import confirmed as the working path. Resume Workflow skill created. Memory corrected. Footer math discrepancy logged. Project question reopened.**
