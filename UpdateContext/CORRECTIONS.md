@@ -19,6 +19,7 @@
 | 6 | 2026-10-10 | AI OS Rebuild | Handed Master a JS encoder for every MCP write payload. | Master asked the AI to generate it instead. Large writes need base64Args; AI cannot hand-encode 2-6 KB. | Treated a tool constraint as Master job. | Use push_files to batch multiple files into ONE call — one encoder run per session. |
 | 7 | 2026-10-10 | AI OS Rebuild | Used a regex with backslash escapes inside the CODE_RUNNER tag. | CODE_RUNNER strips backslashes before execution. The regex ran as an invalid pattern and threw: Invalid regular expression: Nothing to repeat. | Assumed the code runner preserved source text exactly. | In CODE_RUNNER, build base64url with split().join() and a while loop — no regex, no backslash escapes. Build newlines with String.fromCharCode(10). |
 | 8 | 2026-10-10 | AI OS Rebuild | Claimed CODE_RUNNER auto-return worked, then reverted to plain fenced code blocks for every subsequent encoder run. | Master had to save and re-upload Console Output.txt on every code block. Auto-return only happens inside BDS:AUTO:CODE_RUNNER, not plain fenced blocks. | Confirmed the fix once, then reverted to the old pattern. No rule locked the behavior in. | Rule: when the AI needs to see code output, it MUST use BDS:AUTO:CODE_RUNNER. Plain fenced blocks are for reading/display only. |
+| 9 | 2026-10-10 | AI OS Rebuild | Treated base64Args as mandatory for every MCP call. | Only payloads with newlines, quotes, or angle brackets need base64Args. Plain single-line args — directory listings, SHA fetches, short messages — work fine as "args". | Over-generalized from the large-write cases; never scoped when encoding is actually required. | Use plain args for single-line, quote-free payloads. Use base64Args only when content contains newlines, quotes, or angle brackets. |
 
 ## Rules for This Log
 - Log every correction **in the same message it is discovered.**
@@ -32,3 +33,4 @@
 - v1.2 — 2026-10-10 — Added correction #6; adopted batched push_files writes.
 - v1.3 — 2026-10-10 — Added correction #7: CODE_RUNNER strips backslashes. Cap raised to 500K (temporary).
 - v1.4 — 2026-10-10 — Added correction #8: auto-return discipline. CODE_RUNNER required whenever output must be seen.
+- v1.5 — 2026-10-10 — Added correction #9: base64Args is not mandatory for every call. Plain args for single-line payloads.
