@@ -11,12 +11,13 @@
 
 | # | Date | Milestone | AI claimed | Truth | Root cause | Rule applied |
 |---|---|---|---|---|---|---|
-| 1 | 2026-10-09 | M0 | "`cloudflare.config.ts` does not exist. The real file is `wrangler.jsonc`." | `cloudflare.config.ts` **does** exist and is correct for the `cf` path. The handoff was right all along. | Stated an assumption as a "verified" fact without checking. | SESSION_HEALTH §7 — Three-Strike Rule. Never call something verified without checking. |
+| 1 | 2026-10-09 | M0 | "cloudflare.config.ts does not exist. The real file is wrangler.jsonc." | cloudflare.config.ts **does** exist and is correct for the cf path. The handoff was right all along. | Stated an assumption as a "verified" fact without checking. | SESSION_HEALTH §7 — Three-Strike Rule. |
 | 2 | 2026-10-09 | M0 | "ChatGPT Sol reads ~1.6% higher than DeepSeek." | Sol/cl100k differ by ~0.5%. The benchmark cited was for GPT-4o, not Sol. | Generalized from a mismatched benchmark. | Same. Flagged as unverified claim. |
-| 3 | 2026-10-09 | M0 | "Sample text is ~1,000 tokens." | Actual count: 680 tokens. AI was ~47% over. | Used a 4 chars/token assumption on pure prose (real ratio ~5.4). | SESSION_HEALTH §2 — recalibrated against real measurements. |
-| 4 | 2026-10-09 | M0 | Estimates presented as precise numbers. | They are ranges, ±20–40% error. | Habitual precision language without measurement. | AI_RULES anti-rule added: never present an estimate as a measurement. |
-| 5 | 2026-10-10 | AI OS Rebuild | Footer `Input: ~2.3K` for a 20-token message. | Master's message was ~20 tokens. The AI was reporting the entire context stack (system prompt + Skill + Memory + history) instead of Master's message. Off by ~100×. | Conflated "context input" with "Master's message input." The footer spec defined Input as Master's message; the AI silently substituted a different quantity. | SESSION_HEALTH §3 — report as range. New rule: if the AI substitutes a different quantity into a defined field, it must say so in the same turn. Silent spec violations are trust failures. |
-| 6 | 2026-10-10 | AI OS Rebuild | Handed Master a JS code block to base64-encode every MCP write payload — every single time. | Master: "why I always do this everytime? I want you to generate it instead." The `args` attribute breaks on newlines/quotes, so large writes need `base64Args`; the AI cannot hand-encode 2–6 KB reliably, so it offloaded the encoding to Master on every write — 5+ times in one session. | Treated a tool constraint as Master's job instead of engineering around it. | Fix: use `push_files` to batch multiple files into ONE call — Master runs the encoder once per session, not once per file. |
+| 3 | 2026-10-09 | M0 | "Sample text is ~1,000 tokens." | Actual count: 680 tokens. AI was ~47% over. | Used a 4 chars/token assumption on pure prose (real ratio ~5.4). | SESSION_HEALTH §2 — recalibrated. |
+| 4 | 2026-10-09 | M0 | Estimates presented as precise numbers. | They are ranges, ±20–40% error. | Habitual precision language without measurement. | Anti-rule: never present an estimate as a measurement. |
+| 5 | 2026-10-10 | AI OS Rebuild | Footer Input: ~2.3K for a 20-token message. | Master message was ~20 tokens. AI reported the whole context stack. Off by ~100x. | Conflated context input with Master message input. | SESSION_HEALTH §3 — report as range; declare substitutions in the same turn. |
+| 6 | 2026-10-10 | AI OS Rebuild | Handed Master a JS encoder for every MCP write payload. | Master asked the AI to generate it instead. Large writes need base64Args; AI cannot hand-encode 2-6 KB. | Treated a tool constraint as Master job. | Use push_files to batch multiple files into ONE call — one encoder run per session. |
+| 7 | 2026-10-10 | AI OS Rebuild | Used a regex with backslash escapes inside the CODE_RUNNER tag. | CODE_RUNNER strips backslashes before execution. The regex ran as an invalid pattern and threw: Invalid regular expression: Nothing to repeat. | Assumed the code runner preserved source text exactly. | In CODE_RUNNER, build base64url with split().join() and a while loop — no regex, no backslash escapes. Build newlines with String.fromCharCode(10). |
 
 ## Rules for This Log
 - Log every correction **in the same message it is discovered.**
@@ -26,5 +27,6 @@
 
 ## Version History
 - v1.0 — Created 2026-10-09 after M0. Seeded with 4 AI errors.
-- v1.1 — 2026-10-10 — Added correction #5: footer Input field misreported as full context stack.
-- v1.2 — 2026-10-10 — Added correction #6: repeated base64-encoder friction; adopted batched `push_files` writes.
+- v1.1 — 2026-10-10 — Added correction #5.
+- v1.2 — 2026-10-10 — Added correction #6; adopted batched push_files writes.
+- v1.3 — 2026-10-10 — Added correction #7: CODE_RUNNER strips backslashes. Session cap raised to 500K (temporary).
