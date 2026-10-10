@@ -1,36 +1,36 @@
 # AI_OS_REBUILD_HANDOFF.md
-> Version: v1.7
-> Status: **Cleanup pass 3 of 5 done. Session cap raised to 500K (temporary).**
-> Next step: **Finish Cleanups 3 and 4.**
-> Build status: Worker live. Manifest drift fixed. Footer spec corrected. CODE_RUNNER auto-return confirmed.
+> Version: v1.8
+> Status: **Cleanup pass COMPLETE (5/5). Batch-write workflow adopted. Repo consistent.**
+> Next step: **Awaiting Master direction on the next phase.**
+> Build status: Worker live. All docs aligned. Handoff convention updated to 500K.
 
 ---
 
-## UPDATE — what changed this session (v1.6 → v1.7)
+## UPDATE — what changed this session (v1.7 → v1.8)
 
-**Cap raised: 300K → 500K (temporary).**
-- SESSION_HEALTH Section 1 denominator updated to 500,000. Footer examples now show /500K.
-- Section 6 and Section 9 reference the 500K cap.
-- Marked temporary — may change again.
+**Cleanup pass complete — all 5 items done.**
+- Cleanup 1 — SESSION_HEALTH footer + thresholds. Commit 43b85b41.
+- Cleanup 2 — manifest drift fixed + manifest.md mirror. Commits 17778a5d, 150746c0.
+- Cleanup 3 — CONTEXT_INDEX ghost ref removed, tree corrected. Commit 9dda3e64.
+- Cleanup 4 — README structure + handoff convention fixed. Commit f1859af3.
+- Cleanup 5 — override confirmed permanent.
 
-**CODE_RUNNER auto-return confirmed.**
-- Output from BDS:AUTO:CODE_RUNNER flows back to the AI without copy-paste. Automation works.
-- **Caveat: CODE_RUNNER strips backslashes before execution.** A regex with escaped characters failed at runtime.
-- Rule: build base64url with split().join() and a while loop. Build newlines with String.fromCharCode(10). No regex, no escapes.
-- Logged as CORRECTIONS #7.
+**Batch-write workflow adopted (extends CORRECTIONS #6).**
+- Draft all file changes in chat across turns. Commit them together in ONE push_files call.
+- One encoder run, one commit, N files.
+- Commit individually only when a single large file would blow the context budget.
+- Reason: each MCP write is a commit. Committing per-change means one base64 run per change.
 
-**Prior session (v1.5 → v1.6), still current:**
-- manifest.md mirror created; manifest.json updated to v2.2 (drift fixed). Commits 17778a5d, 150746c0.
-- SESSION_HEALTH footer + thresholds corrected. Commit 43b85b41.
-- CORRECTIONS #6 logged. Commit c5e6df05.
-- Handoff v1.6 committed. Commit e6cf9438.
+**CORRECTIONS log — now v1.6.**
+- #6 updated: batch across turns, not just within one turn.
+- #7 CODE_RUNNER strips backslashes. #8 auto-return discipline. #9 base64 only when needed.
 
 ### Operational learnings
 
-- **push_files batches multiple files in one commit.** Array of {path, content}.
+- **push_files batches N files in one commit.** The core tool for the batch-write workflow.
 - **MCP writes can fail silently.** Verify via directory listing before claiming success.
+- **CODE_RUNNER strips backslashes.** Write escape-free code: split().join(), while loops, String.fromCharCode(10).
 - **Directory listings work** even when the file itself is .json.
-- **CODE_RUNNER strips backslashes.** Write escape-free code.
 - **Direct .json fetch fails** — use the raw-content route.
 
 ---
@@ -41,15 +41,13 @@
 - ✅ Live layer (Skill + Memory + system prompts)
 - ✅ Repo layer (structure, files, manifest)
 - ✅ MCP Worker live end-to-end; 26 tools discovered
-- ✅ manifest drift fixed; manifest.md mirror created
-- ✅ SESSION_HEALTH footer + threshold fixes applied
-- ✅ Session cap raised to 500K (temporary)
-- ✅ CORRECTIONS #6 and #7 logged
-- ✅ CODE_RUNNER auto-return confirmed
+- ✅ Cleanup pass 5/5 — manifest, SESSION_HEALTH, CONTEXT_INDEX, README, override
+- ✅ Cap raised to 500K (temporary)
+- ✅ CORRECTIONS #6–#9 logged (v1.6)
+- ✅ Batch-write workflow adopted
 
-**Open — the remaining cleanup pass:**
-- ⚠️ **Cleanup 3** — CRM_SAAS_LEGAL_DRAFT.md referenced in UpdateContext/CONTEXT_INDEX.md but absent from repo. Either commit the draft or remove the reference.
-- ⚠️ **Cleanup 4** — README.md structure section still shows the old 3-folder layout.
+**Open:**
+- None. The cleanup pass is closed. The repo is internally consistent.
 
 **Known bugs / issues:**
 - Direct .json fetch fails silently — use the raw-content route.
@@ -61,27 +59,18 @@
 
 ## NEXT — immediate next action
 
-**Finish the cleanup pass.** Two files remain, batched via one push_files call:
+**Awaiting Master direction.** The rebuild's cleanup phase is complete. Possible next phases:
+- Harden the MCP worker (error handling, logging).
+- Resume the CRM SaaS project.
+- New capability on the AI OS itself.
 
-### Cleanup 3 — Resolve the CRM_SAAS_LEGAL_DRAFT.md reference
-- **File:** UpdateContext/CONTEXT_INDEX.md
-- **Change:** commit the draft, or remove the reference.
-
-### Cleanup 4 — Update the README.md structure section
-- **File:** README.md
-- **Change:** add Projects/, list both handoffs, reflect the current tree.
-
-### Order of operations
-1. Read CONTEXT_INDEX.md and README.md (both .md — no fetch issues).
-2. Prepare both edits.
-3. Batch via ONE push_files call.
-4. Verify via root directory listing.
+Master decides. No work starts without a go.
 
 ---
 
 ## Open Questions for Master
 
-1. **Cleanup 3 direction** — commit the LEGAL_DRAFT, or remove the reference?
+1. **Next phase** — what comes after the cleanup pass?
 2. **Cap 500K** — temporary. Revisit when?
 
 ---
@@ -95,4 +84,5 @@
 - v1.4 — Steps 2 and 3 complete. OAuth apps, secrets, bindings confirmed.
 - v1.5 — Steps 4 and 5 complete. MCP path live. resolveExternalToken patch.
 - v1.6 — Cleanup 3 of 5 done. Manifest drift fixed. Footer corrected. Override permanent.
-- **v1.7 — 2026-10-10 — Cap raised to 500K (temporary). CODE_RUNNER auto-return confirmed; backslash caveat logged as #7. Remaining: Cleanups 3 and 4.**
+- v1.7 — Cap raised to 500K (temporary). CODE_RUNNER auto-return confirmed; backslash caveat logged.
+- **v1.8 — 2026-10-10 — Cleanup pass COMPLETE (5/5). Batch-write workflow adopted. CORRECTIONS v1.6. Repo consistent. Awaiting next-phase direction.**
