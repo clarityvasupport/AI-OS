@@ -27,15 +27,15 @@
 | `UpdateContext/GLOSSARY.md` | Plain-language definitions. | AI uses an unfamiliar term. |
 | `UpdateContext/DECISION_LOG.md` | Chronological decisions and reasons. | Resuming a project — understanding why things are the way they are. |
 | `UpdateContext/CORRECTIONS.md` | Log of AI errors and fixes. | AI seems to repeat a mistake. |
-| `UpdateContext/HOW_TO_START_A_CHAT.md` | Master's ritual. | Reference only — mostly superseded by the Skill. |
+| `UpdateContext/HOW_TO_START_A_CHAT.md` | Master ritual. | Reference only — mostly superseded by the Skill. |
 | `UpdateContext/CONTEXT_INDEX.md` | This file. | When unsure what exists. |
 
 ## Tier 3 — Project (one per project)
 
 | File | Purpose | Retrieve when |
 |---|---|---|
+| `Projects/AI_OS_REBUILD_HANDOFF.md` | Full state of the AI OS rebuild. | Working on the AI OS itself. |
 | `Projects/CRM_SAAS_HANDOFF.md` | Full state of the CRM SaaS project. | Working on CRM SaaS. |
-| `Projects/CRM_SAAS_LEGAL_DRAFT.md` | Legal draft for attorney review. | Discussing legal. *(Status: not yet committed — see flag below.)* |
 
 ## Loading order
 
@@ -55,11 +55,13 @@ AI-OS/
 ├── README.md
 ├── PROTOCOL.md
 ├── manifest.json
+├── manifest.md
 ├── Core/
 │   ├── MASTER_PROFILE.md
 │   ├── SKILLS.md
 │   └── SESSION_HEALTH.md
 ├── Projects/
+│   ├── AI_OS_REBUILD_HANDOFF.md
 │   └── CRM_SAAS_HANDOFF.md
 └── UpdateContext/
     ├── CONTEXT_INDEX.md
@@ -68,10 +70,6 @@ AI-OS/
     ├── DECISION_LOG.md
     └── HOW_TO_START_A_CHAT.md
 ```
-
-## Open flag
-
-**`CRM_SAAS_LEGAL_DRAFT.md`** — referenced in the previous index v1.1 but **not present in the repo**. Either it was never committed, or it lives elsewhere. Confirm and either commit it or remove the reference. Tracked for resolution.
 
 ## Maintenance
 
@@ -84,3 +82,4 @@ AI-OS/
 - v1.0 — Initial context pack.
 - v1.1 — Added PREAMBLE.md. Added Tier 2 files. Clarified loading order.
 - **v2.0 — 2026-10-10 — Rewritten for the Skill-based architecture. Rules moved to Skill. Folders renamed (Coding → Core). Projects folder introduced. PREAMBLE.md, AI_RULES.md, AGENT.md removed.**
+- v2.1 — 2026-10-10 — Removed stale CRM_SAAS_LEGAL_DRAFT.md reference (file was never committed). Added manifest.md to tree. Added AI_OS_REBUILD_HANDOFF.md to Tier 3 and tree.
